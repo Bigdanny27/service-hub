@@ -1,0 +1,36 @@
+import mongoose from "mongoose"
+
+const paymentSchema = new mongoose.Schema({
+    booking: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Booking",
+        required: true
+    },
+    customer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    status: {
+        type: String,
+        enum: ["pending", "successful", "failed"],
+        default: "pending"
+    },
+    transactionReference: {
+        type: String,
+        unique: true
+    },
+    paidAt: {
+        type: Date,
+        default: null
+    }
+}, { timestamps: true })
+
+const Payment = mongoose.model("Payment", paymentSchema)
+
+export default Payment
