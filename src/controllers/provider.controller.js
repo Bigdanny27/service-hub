@@ -183,3 +183,47 @@ export const acceptBookings = async (req, res) => {
         });
     }
 }
+
+export const markBookingAsCompleted = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const { bookingId } = req.params;
+
+        const provider = await Provider.findOne({ user: userId });
+
+        if (!provider) {
+            return res.status(404).json({
+                message: "Provider profile not found"
+            });
+        }
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to mark booking as completed",
+            error: error.message
+        });
+    }
+}
+
+export const cancelBookingWhenAppropriate = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { bookingId } = req.params;
+
+        const provider = await Provider.findOne({ user: userId });
+        if (!provider) {
+            return res.status(404).json({
+                message: "Provider profile not found"
+            });
+        }
+        return res.status(200).json({
+            message: "Booking canceled successfully",
+            bookingId
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to cancel booking",
+            error: error.message
+        });
+    }
+}
