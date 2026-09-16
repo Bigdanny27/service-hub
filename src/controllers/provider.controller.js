@@ -114,3 +114,72 @@ export const setAvailability = async (req, res) => {
         });
     }
 }
+
+export const viewProviderServices = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const provider = await Provider.findOne({ user: userId }).populate("services");
+
+        if (!provider) {
+            return res.status(404).json({
+                message: "Provider profile not found"
+            })
+        }
+        return res.status(200).json({
+            message: "Provider services retrieved successfully",
+            services: provider.services
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to retrieve provider services",
+            error: error.message    
+        })
+    }
+}
+
+export const viewProviderBookings = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const provider = await Provider.findOne({ user: userId }).populate("bookings");
+
+        if (!provider) {
+            return res.status(404).json({
+                message: "Provider profile not found"
+            })
+        }
+        return res.status(200).json({
+            message: "Provider bookings retrieved successfully",
+            bookings: provider.bookings
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to retrieve provider bookings",
+            error: error.message
+        })
+    }
+}
+
+export const acceptBookings = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { bookingId } = req.params;
+
+        const provider = await Provider.findOne({ user: userId });
+        if (!provider) {
+            return res.status(404).json({
+                message: "Provider profile not found"
+            });
+        }
+         return res.status(200).json({
+            message: "Booking accepted successfully",
+            bookingId
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to accept booking",
+            error: error.message
+        });
+    }
+}
