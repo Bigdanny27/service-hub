@@ -38,3 +38,74 @@ export const createServiceService = async ({ providerId, categoryId, name, descr
         service
     };
 };
+
+export const getAllServicesService = async (query = {}) => {
+    const {
+        search,
+        category,
+        provider,
+        minPrice,
+        maxPrice,
+        sort,
+        page = 1,
+        limit = 10
+    } = query;
+
+    const filter = {};
+
+    if (search) {
+        filter.name = {
+            $regex: search,
+            $options: "i",
+        };
+    }
+
+    if (category) {
+        filter.category = category;
+    }
+
+    if (provider) {
+        filter.provider = provider;
+    }
+
+    if (minPrice || maxPrice) {
+        filter.price = {};
+
+        if (minPrice) {
+            filter.price.$gte = Number(minPrice);
+        }
+
+        if (maxPrice) {
+            filter.price.$lte = Number(maxPrice);
+        }
+    }
+
+    let sortOption = { createdAt: -1 };
+
+    if (sort === "price") {
+        sortOption = { price: 1 };
+    }
+
+    if (sort === "-price") {
+        sortOption = { price: -1 };
+    }
+
+    if (sort === "name") {
+        sortOption = { name: 1 };
+    }
+
+    if (sort === "-name") {
+        sortOption = { name: -1 };
+    }
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const services = await Service.find(filter)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limitNumber);
+
+    return services;
+}
