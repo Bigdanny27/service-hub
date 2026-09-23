@@ -1,229 +1,152 @@
-import mongoose from "mongoose"
-import Provider from "../models/provider.model.js"
-import User from "../models/user.model.js"
+import {
+  createProviderService,
+  getProviderProfileService,
+  updateProviderProfileService,
+  setAvailabilityService,
+  viewProviderServicesService,
+  viewProviderBookingsService,
+  acceptBookingsService,
+  markBookingAsCompletedService,
+  cancelBookingWhenAppropriateService,
+} from "../services/provider.service.js";
 
+const handleServiceError = (error, res) => {
+  const statusCode = error.statusCode || 500;
+
+  return res.status(statusCode).json({
+    message: error.message || "internal server error",
+    ...(statusCode >= 500 ? { error: error.message } : {}),
+  });
+};
 
 export const createProvider = async (req, res) => {
-    try {
-        const { businessName, description, location, phone } = req.body
-        const userId = req.user._id
+  try {
+    const result = await createProviderService({
+      userId: req.user._id,
+      ...req.body,
+    });
 
-        if (!businessName || !description || !location || !phone) {
-            return res.status(400).json({ message: "All fields are required" })
-        }
-        const existingProvider = await Provider.findOne({user: userId})
-        if (existingProvider) {
-            return res.status(409).json({
-                message: "Provider profile already exists for this user"
-            })
-        }
-        const provider = await Provider.create({
-                user: userId,
-                businessName,
-                description,
-                location,
-                phone
-            })
-            return res.status(201).json({
-                message: "Provider profile created successfully",
-                provider
-            })
-        }
-    catch (error) {
-        return res.status(500).json({
-            message: "Internal server error",
-            error: error.message
-        })
-    }
-}
+    return res.status(result.statusCode).json({
+      message: result.message,
+      provider: result.provider,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const getProviderProfile = async (req, res) => {
-    try {
-        const userId = req.user._id;
-
-        const provider = await Provider.findOne({ user: userId }).populate("user", "name lastname email");
-        if (!provider) {
-            return res.status(404).json({
-                message: "Provider profile not found"
-            });
-        }
-        return res.status(200).json({
-            message: "Provider profile retrieved successfully",
-            provider
-        }); 
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to retrieve provider profile",
-            error: error.message
-        });
-    }
-}
+  try {
+    const result = await getProviderProfileService({ userId: req.user._id });
+    return res.status(result.statusCode).json({
+      message: result.message,
+      provider: result.provider,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const updateProviderProfile = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const updatedData = req.body;
+  try {
+    const result = await updateProviderProfileService({
+      userId: req.user._id,
+      updatedData: req.body,
+    });
 
-        const updatedProvider = await Provider.findOneAndUpdate({ user: userId }, updatedData, { new: true });
-        if (!updatedProvider) {
-            return res.status(404).json({
-                message: "Provider profile not found"
-            });
-        }
-        return res.status(200).json({
-            message: "Provider profile updated successfully",
-            provider: updatedProvider
-        });
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to update provider profile",
-            error: error.message
-        });
-    }
-}
+    return res.status(result.statusCode).json({
+      message: result.message,
+      provider: result.provider,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const setAvailability = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const { isAvailable } = req.body;
+  try {
+    const result = await setAvailabilityService({
+      userId: req.user._id,
+      isAvailable: req.body.isAvailable,
+    });
 
-        if (typeof isAvailable !== 'boolean') {
-            return res.status(400).json({ message: "isAvailable must be a boolean" });
-        }
-
-        const provider = await Provider.findOneAndUpdate(
-            { user: userId },
-            { isAvailable },
-            { new: true }
-        );
-
-        if (!provider) {
-            return res.status(404).json({
-                message: "Provider profile not found"
-            });
-        }
-
-        return res.status(200).json({
-            message: "Availability status updated successfully",
-            provider
-        });
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to update availability status",
-            error: error.message
-        });
-    }
-}
+    return res.status(result.statusCode).json({
+      message: result.message,
+      provider: result.provider,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const viewProviderServices = async (req, res) => {
-    try {
-        const userId = req.user._id;
-
-        const provider = await Provider.findOne({ user: userId }).populate("services");
-
-        if (!provider) {
-            return res.status(404).json({
-                message: "Provider profile not found"
-            })
-        }
-        return res.status(200).json({
-            message: "Provider services retrieved successfully",
-            services: provider.services
-        })
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to retrieve provider services",
-            error: error.message    
-        })
-    }
-}
+  try {
+    const result = await viewProviderServicesService({ userId: req.user._id });
+    return res.status(result.statusCode).json({
+      message: result.message,
+      services: result.services,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const viewProviderBookings = async (req, res) => {
-    try {
-        const userId = req.user._id;
-
-        const provider = await Provider.findOne({ user: userId }).populate("bookings");
-
-        if (!provider) {
-            return res.status(404).json({
-                message: "Provider profile not found"
-            })
-        }
-        return res.status(200).json({
-            message: "Provider bookings retrieved successfully",
-            bookings: provider.bookings
-        })
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to retrieve provider bookings",
-            error: error.message
-        })
-    }
-}
+  try {
+    const result = await viewProviderBookingsService({ userId: req.user._id });
+    return res.status(result.statusCode).json({
+      message: result.message,
+      bookings: result.bookings,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const acceptBookings = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const { bookingId } = req.params;
+  try {
+    const result = await acceptBookingsService({
+      userId: req.user._id,
+      bookingId: req.params.bookingId,
+    });
 
-        const provider = await Provider.findOne({ user: userId });
-        if (!provider) {
-            return res.status(404).json({
-                message: "Provider profile not found"
-            });
-        }
-         return res.status(200).json({
-            message: "Booking accepted successfully",
-            bookingId
-        });
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to accept booking",
-            error: error.message
-        });
-    }
-}
+    return res.status(result.statusCode).json({
+      message: result.message,
+      bookingId: result.bookingId,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const markBookingAsCompleted = async (req, res) => {
-    try {
-        const userId = req.user._id;
+  try {
+    const result = await markBookingAsCompletedService({
+      userId: req.user._id,
+      bookingId: req.params.bookingId,
+    });
 
-        const { bookingId } = req.params;
-
-        const provider = await Provider.findOne({ user: userId });
-
-        if (!provider) {
-            return res.status(404).json({
-                message: "Provider profile not found"
-            });
-        }
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to mark booking as completed",
-            error: error.message
-        });
-    }
-}
+    return res.status(result.statusCode).json({
+      message: result.message,
+      bookingId: result.bookingId,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const cancelBookingWhenAppropriate = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const { bookingId } = req.params;
+  try {
+    const result = await cancelBookingWhenAppropriateService({
+      userId: req.user._id,
+      bookingId: req.params.bookingId,
+    });
 
-        const provider = await Provider.findOne({ user: userId });
-        if (!provider) {
-            return res.status(404).json({
-                message: "Provider profile not found"
-            });
-        }
-        return res.status(200).json({
-            message: "Booking canceled successfully",
-            bookingId
-        });
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to cancel booking",
-            error: error.message
-        });
-    }
-}
+    return res.status(result.statusCode).json({
+      message: result.message,
+      bookingId: result.bookingId,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};

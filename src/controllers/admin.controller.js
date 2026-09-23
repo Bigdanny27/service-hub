@@ -1,123 +1,75 @@
-import User from "../models/user.model.js";
+import {
+  getAllUsersService,
+  activateUserService,
+  deactivateUserService,
+  deleteUserService
+//   toggleUserStatusService,
+} from "../services/admin.service.js";
 
+const handleServiceError = (error, res) => {
+  const statusCode = error.statusCode || 500;
+
+  return res.status(statusCode).json({
+    message: error.message || "internal server error",
+    ...(statusCode >= 500 ? { error: error.message } : {}),
+  });
+};
 
 export const getAllUsers = async (req, res) => {
-    try {
-        const users = await User.find().select("-password")
-        if(!users){
-            return res.status(404).json({
-                message: "no users found"
-            })
-        }
-        return res.status(200).json({
-            message: "users successfully found",
-            users
-        })
-    } catch (error) {
-        res.status(500).json({
-            message: "internal server error",
-            error: error.message
-        })
-    }
-}
-
+  try {
+    const result = await getAllUsersService();
+    return res.status(result.statusCode).json({
+      message: result.message,
+      users: result.users,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 // export const toggleUserStatus = async (req, res) => {
-//     try {
-//         const { userId } = req.params;
+//   try {
+//     const result = await toggleUserStatusService({ userId: req.params.userId });
+//     return res.status(result.statusCode).json({
+//       message: result.message,
+//       user: result.user,
+//     });
+//   } catch (error) {
+//     return handleServiceError(error, res);
+//   }
+// };
 
-//         const user = await User.findById(userId);
-//         if (!user) {
-//             return res.status(404).json({
-//                 message: "User not found"
-//             });
-//         }
-
-//         user.isActive = !user.isActive;
-//         await user.save();
-
-//         return res.status(200).json({
-//             message: user.isActive ? "User activated successfully" : "User deactivated successfully",
-//             user
-//         });
-//     } catch (error) {
-//         res.status(500).json({
-//             message: "Failed to update user status",
-//             error: error.message
-//         });
-//     }
-// }
 export const activateUser = async (req, res) => {
-    try {
-        const { userId } = req.params;
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found"
-            });
-        }
-
-        user.isActive = true;
-        await user.save();
-
-        return res.status(200).json({
-            message: "User activated successfully",
-            user
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: "Failed to activate user",
-            error: error.message
-        });
-    }
-}
+  try {
+    const result = await activateUserService({ userId: req.params.userId });
+    return res.status(result.statusCode).json({
+      message: result.message,
+      user: result.user,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const deactivateUser = async (req, res) => {
-    try {
-        const { userId } = req.params;
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found"
-            });
-        }
-
-        user.isActive = false;
-        await user.save();
-
-        return res.status(200).json({
-            message: "User deactivated successfully",
-            user
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: "Failed to deactivate user",
-            error: error.message
-        });
-    }
-}
-
+  try {
+    const result = await deactivateUserService({ userId: req.params.userId });
+    return res.status(result.statusCode).json({
+      message: result.message,
+      user: result.user,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const deleteUser = async (req, res) => {
-    try {
-        const {userId} = req.params
-        let user = await User.findByIdAndDelete(userId)
-        if(!user){
-            return res.status(404).json({
-                message: "user not found"
-            })
-        }
-        await User.findByIdAndDelete(userId)
-        
-        return res.status(200).json({
-            message: "user successfully deleted"
-        })
-    } catch (error) {
-        res.status(500).json({
-            message: "internal server error",
-            error: error.message
-        })
-    }
-}
+  try {
+    const result = await deleteUserService({ userId: req.params.userId });
+    return res.status(result.statusCode).json({
+      message: result.message,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};

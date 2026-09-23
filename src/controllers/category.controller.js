@@ -1,131 +1,92 @@
-import Category from "../models/category.model.js"
-import slugify from "slugify"
+import {
+  createCategoryService,
+  getAllCategoriesService,
+  getSingleCategoryService,
+  updateCategoryService,
+  deleteCategoryService,
+  restoreCategoryService,
+} from "../services/category.service.js";
+
+const handleServiceError = (error, res) => {
+  const statusCode = error.statusCode || 500;
+
+  return res.status(statusCode).json({
+    message: error.message || "internal server error",
+    ...(statusCode >= 500 ? { error: error.message } : {}),
+  });
+};
 
 export const createCategory = async (req, res) => {
   try {
-    const { name, description } = req.body
-
-    if (!name) {
-      return res.status(400).json({ message: "Category name is required" })
-    }
-
-    const slug = slugify(name, { lower: true, strict: true })
-    const existingCategory = await Category.findOne({$or:[{name},{slug}]})
-    if (existingCategory) {
-      return res.status(409).json({ message: "Category already exists" })
-    }
-
-    const category = await Category.create({
-      name,
-      slug: slug,
-      description: description || "",
-    })
-
-    return res.status(201).json({ message: "Category created successfully", category })
+    const result = await createCategoryService(req.body);
+    return res.status(result.statusCode).json({
+      message: result.message,
+      category: result.category,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Internal server error", error: error.message })
+    return handleServiceError(error, res);
   }
-}
+};
 
 export const getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find()
-    if (categories.length === 0) {
-      return res.status(404).json({ message: "No categories found" })
-    }
-    return res.status(200).json({ message: "Categories fetched successfully", categories })
+    const result = await getAllCategoriesService();
+    return res.status(result.statusCode).json({
+      message: result.message,
+      categories: result.categories,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Internal server error", error: error.message })
+    return handleServiceError(error, res);
   }
-}
+};
 
 export const getSingleCategory = async (req, res) => {
   try {
-    const { id } = req.params
-    const category = await Category.findById(id)
-    if (!category) {
-      return res.status(404).json({ message: "Category not found" })
-    }
-    return res.status(200).json({ message: "Category fetched successfully", category })
+    const result = await getSingleCategoryService({ id: req.params.id });
+    return res.status(result.statusCode).json({
+      message: result.message,
+      category: result.category,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Internal server error", error: error.message })
+    return handleServiceError(error, res);
   }
-}
+};
 
 export const updateCategory = async (req, res) => {
   try {
-    const { id } = req.params
-    const { name, description } = req.body
+    const result = await updateCategoryService({
+      id: req.params.id,
+      ...req.body,
+    });
 
-    const category = await Category.findById(id)
-    if (!category) {
-      return res.status(404).json({ message: "Category not found" })
-    }
-
-    const updateData = {}
-    if (name) {
-      updateData.name = name
-      updateData.slug = slugify(name, { lower: true, strict: true })
-    }
-    if (description !== undefined) {
-      updateData.description = description
-    }
-
-    const updatedCategory = await Category.findByIdAndUpdate(id, updateData, { new: true })
-    return res.status(200).json({ message: "Category updated successfully", category: updatedCategory })
+    return res.status(result.statusCode).json({
+      message: result.message,
+      category: result.category,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Internal server error", error: error.message })
+    return handleServiceError(error, res);
   }
-}
-
+};
 
 export const deleteCategory = async (req, res) => {
-    try {
-        const { id } = req.params
-        const category = await Category.findById(id)
-
-        if (!category) {
-            return res.status(404).json({
-                message: "Category not found"
-            })
-        }
-
-        category.deletedAt = new Date()
-        await category.save()
-
-        return res.status(200).json({
-            message: "Category deleted successfully"
-        })
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to delete category",
-            error: error.message
-        })
-    }
-}
+  try {
+    const result = await deleteCategoryService({ id: req.params.id });
+    return res.status(result.statusCode).json({
+      message: result.message,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
 
 export const restoreCategory = async (req, res) => {
-    try {
-        const { id } = req.params
-        const category = await Category.findById(id)
-
-        if (!category) {
-            return res.status(400).json({
-                message: "Category not found"
-            })
-        }
-
-        category.deletedAt = null
-        await category.save()
-
-        return res.status(200).json({
-            message: "Category restored successfully",
-            category
-        })
-    } catch (error) {
-        return res.status(500).json({
-            message: "Failed to restore category",
-            error: error.message
-        })
-    }
-}
+  try {
+    const result = await restoreCategoryService({ id: req.params.id });
+    return res.status(result.statusCode).json({
+      message: result.message,
+      category: result.category,
+    });
+  } catch (error) {
+    return handleServiceError(error, res);
+  }
+};
