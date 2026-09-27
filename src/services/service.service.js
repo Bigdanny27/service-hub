@@ -144,3 +144,66 @@ export const getSingleServiceService = async (serviceId) => {
 
     return service;
 };
+
+export const updateServiceService = async ({ serviceId, updatedData }) => {
+    if (!serviceId) {
+        throw makeError("Service id is required", 400);
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(serviceId)) {
+        throw makeError("Invalid service id", 400);
+    }
+
+    const service = await Service.findById(serviceId);
+
+    if (!service) {
+        throw makeError("Service not found", 404);
+    }
+
+    if (!updatedData || Object.keys(updatedData).length === 0) {
+        throw makeError("No update data provided", 400);
+    }
+
+    const allowedFields = ["provider", "category", "name", "description", "price", "duration"];
+    const invalidFields = Object.keys(updatedData).filter(
+        (field) => !allowedFields.includes(field)
+    );
+
+    if (invalidFields.length > 0) {
+        throw makeError(`Invalid field(s): ${invalidFields.join(", ")}`, 400);
+    }
+
+    if (updatedData.provider && !mongoose.Types.ObjectId.isValid(updatedData.provider)) {
+        throw makeError("Invalid provider id", 400);
+    }
+
+    if (updatedData.category && !mongoose.Types.ObjectId.isValid(updatedData.category)) {
+        throw makeError("Invalid category id", 400);
+    }
+
+    if (updatedData.price !== undefined && Number.isNaN(Number(updatedData.price))) {
+        throw makeError("Price must be a valid number", 400);
+    }
+
+    if (updatedData.duration !== undefined && Number.isNaN(Number(updatedData.duration))) {
+        throw makeError("Duration must be a valid number", 400);
+    }
+
+    const sanitizedData = {
+        ...updatedData,
+        ...(updatedData.price !== undefined && { price: Number(updatedData.price) }),
+        ...(updatedData.duration !== undefined && { duration: Number(updatedData.duration) })
+    };
+
+    const updatedService = await Service.findByIdAndUpdate(
+        serviceId,
+        sanitizedData,
+        { new: true, runValidators: true }
+    ).populate("provider category");
+
+    return {
+        statusCode: 200,
+        message: "Service updated successfully",
+        service: updatedService,
+    };
+};
