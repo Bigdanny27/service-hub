@@ -10,32 +10,49 @@ const makeError = (message, statusCode) => {
 };
 
 export const createServiceService = async ({ providerId, categoryId, name, description, price, duration }) => {
-    if (!providerId || !categoryId || !name || !description || !price || !duration) {
+    if (
+        providerId == null ||
+        categoryId == null ||
+        name == null ||
+        description == null ||
+        price == null ||
+        duration == null
+    ) {
         throw makeError("All fields are required", 400);
     }
 
-    const provider = await Provider.findById(providerId);
-    if (!provider) {
+    if (!mongoose.Types.ObjectId.isValid(providerId)) {
+        throw makeError("Invalid provider id", 400);
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+        throw makeError("Invalid category id", 400);
+    }
+
+    const providerExists = await Provider.findById(providerId);
+    if (!providerExists) {
         throw makeError("Provider not found", 404);
     }
 
-    const category = await Category.findById(categoryId);
-    if (!category) {
+    const categoryExists = await Category.findById(categoryId);
+    if (!categoryExists) {
         throw makeError("Category not found", 404);
     }
 
     const service = await Service.create({
-        provider: providerId,
-        category: categoryId,
+        provider: providerExists._id,
+        category: categoryExists._id,
         name,
         description,
-        price,
-        duration
+        price: Number(price),
+        duration: Number(duration)
     });
+
+    const created = await Service.findById(service._id).populate("provider category");
 
     return {
         message: "Service created successfully",
-        service
+        service: created
     };
 };
 
@@ -109,3 +126,21 @@ export const getAllServicesService = async (query = {}) => {
 
     return services;
 }
+
+export const getSingleServiceService = async (serviceId) => {
+    if (!serviceId) {
+        throw makeError("Service id is required", 400);
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(serviceId)) {
+        throw makeError("Invalid service id", 400);
+    }
+
+    const service = await Service.findById(serviceId).populate("provider category");
+
+    if (!service) {
+        throw makeError("Service not found", 404);
+    }
+
+    return service;
+};
